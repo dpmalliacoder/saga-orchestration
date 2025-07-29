@@ -1,6 +1,31 @@
 # SagaOrchestration Project
 
 ## Overview
+In monolithic architecture, the entire business logic part of single application, we can modify multiple databases in a 
+single transaction that allow ACID transactional guarantee. When the business transaction are across the services in
+microservice based architecture and single database per microservice then it is difficult as a system to manage the ACID 
+guarantee.
+
+![Class Diagram](diagrams/ms-no-acid.png)
+
+The above picture when user request for the new order, the request transactions are goes through order service, inventory
+service and payment service to fulfill the order request. If there is a failure in one of this transaction steps then
+it is difficult to guarantee of roll back.
+
+### Resolution
+The saga pattern breaks the transaction into sequence of operations that each microservice have to perform on success 
+and compensation operation to reverse the changes to ensure data consistency.
+
+### Saga Orchestration
+A central orchestration service that manages the saga execution flow and coordinate with other services to make sure the
+ACID transaction guarantee.
+
+![Class Diagram](diagrams/saga-orchestation.png)
+
+The sole purpose of the orchestration service is to orchestrate the transaction order correctly and apply the compensation
+operations in the opposite order if anything goes wrong.
+
+
 The SagaOrchestration project is a microservices-based architecture that includes four distinct services: Order Service, Inventory Service, Payment Service, and Order Orchestration. Each service is responsible for a specific domain and can be developed, deployed, and scaled independently.
 
 ## Modules
@@ -44,49 +69,3 @@ Contributions are welcome! Please submit a pull request or open an issue for any
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
-
-```plantuml
-
-@startuml
-
-title Saga Orchestration Pattern
-
-!include <C4/C4>
-!include <C4/C4_Container>
-!include <C4/C4_Component>
-
-!include <cloudinsight/kafka>
-!include <cloudinsight/cassandra>
-
-scale 0.5
-AddRelTag("kafka_link_outward", $textColor=#335DA5, $lineColor=#335DA5, $lineStyle=bold())
-AddRelTag("kafka_link_inward", $textColor=#3FBA11, $lineColor=#3FBA11, $lineStyle=bold())
-
-
-' External actor
-Person(enduser, "End User", "create order")
-
-Container(order_service, "Order-Service")
-ContainerDb(order_db, "Order Database", $techn="Postgres", $sprite="postgres")
-ContainerQueue(order_created, "Topic:order-created", "Kafka:9092", $sprite="kafka")
-ContainerQueue(order_updated, "Topic:order-updated", "Kafka:9092", $sprite="kafka")
-Container(order_orchestrator, "Order-Orchestrator")
-Container(payment_service, "Payment-Service")
-Container(inventory_service, "Inventory-Service")
-ContainerDb(payment_db, "Payment Database", $techn="Postgres", $sprite="postgres")
-ContainerDb(invnetory_db, "Inventory Database", $techn="Postgres", $sprite="postgres")
-
-Rel(enduser, order_service, "/order")
-Rel(order_service, order_db, "Reads from and writes data to",  $techn="SQL/TCP")
-Rel(order_service, order_created, "", $tags="kafka_link_outward")
-Rel(order_updated, order_service, "", $tags="kafka_link_inward")
-Rel(order_created, order_orchestrator, "", $tags="kafka_link_inward")
-Rel(order_orchestrator, order_updated, "", $tags="kafka_link_outward")
-Rel(order_orchestrator, payment_service, "")
-Rel(order_orchestrator, inventory_service, "")
-Rel(payment_service, payment_db, "Reads from and writes data to",  $techn="SQL/TCP")
-Rel(inventory_service, invnetory_db, "Reads from and writes data to",  $techn="SQL/TCP")
-
-
-
-```
