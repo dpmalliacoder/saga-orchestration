@@ -1,0 +1,36 @@
+server:
+    port: 8081
+
+spring:
+    datasource:
+        url: jdbc:h2:mem:saga-orchestration;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        driver-class-name: org.h2.Driver
+        username: sa
+        password:
+    h2:
+        console:
+            enabled: true
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: false
+    
+    application:
+        name: InventoryService
+dd:
+    env: staging
+    profiling:
+        enabled: true
+    service: InventoryService
+    version: 1.0
+logging:
+    structured:
+        format:
+            console: logstash
+            file: logstash
+        json:
+            stacktrace:
+                root: first
+                max-length: 1024
+                include-common-frames: true
+                include-hashes: true
